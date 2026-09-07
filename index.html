@@ -295,7 +295,7 @@
           const passed = !isActive && next && p.dateObj <= today;
           return `<div class="row ${isActive ? 'active':''} ${passed ? 'done':''}">
             <div class="p-name">${p.label}</div>
-            <div class="p-time">${p.time}</div>
+            <div class="p-time">${p.time.str}</div>
           </div>`;
         }).join('')}
         <div class="footer-actions">
@@ -363,7 +363,7 @@
       const diff = p.dateObj - now;
       if(diff > 0){
         const id = setTimeout(() => {
-          try{ new Notification('حان الآن وقت ' + p.label, { body:'موعد صلاة ' + p.label + ' — ' + p.time }); }catch(e){}
+          try{ new Notification('حان الآن وقت ' + p.label, { body:'موعد صلاة ' + p.label + ' — ' + p.time.str }); }catch(e){}
         }, diff);
         scheduledTimeouts.push(id);
       }
@@ -379,4 +379,4 @@
 })();
 </script>
 </body>
-  </html>
+</html>
