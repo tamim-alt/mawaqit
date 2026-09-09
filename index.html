@@ -25,7 +25,6 @@
     color:var(--cream);
     min-height:100vh;
     display:flex;
-    flex-direction:column;
     align-items:center;
     justify-content:center;
     padding:32px 16px;
@@ -169,6 +168,27 @@
     font-family:'Tajawal', sans-serif; font-size:12px; cursor:pointer;
   }
   .qa-chip:hover{ background:rgba(201,161,93,0.12); }
+
+  .adhkar-tabs{ display:flex; gap:8px; margin-bottom:16px; }
+  .adhkar-tab{
+    flex:1; background:transparent; border:1px solid rgba(201,161,93,0.35);
+    color:var(--sage); border-radius:12px; padding:10px; font-family:'Tajawal', sans-serif;
+    font-size:14px; font-weight:700; cursor:pointer;
+  }
+  .adhkar-tab.active{ background:var(--gold); color:var(--ink); border-color:var(--gold); }
+  .adhkar-item{
+    background:rgba(0,0,0,0.2); border:1px solid rgba(201,161,93,0.25);
+    border-radius:14px; padding:16px; margin-bottom:10px; cursor:pointer;
+    transition:opacity .2s ease, border-color .2s ease;
+  }
+  .adhkar-item.done{ opacity:.45; border-color:rgba(201,161,93,0.15); }
+  .adhkar-text{ font-size:14.5px; line-height:2; color:var(--cream); margin-bottom:10px; }
+  .adhkar-progress{
+    display:flex; align-items:center; justify-content:space-between;
+    font-size:12px; color:var(--gold-soft);
+  }
+  .adhkar-count{ font-weight:700; font-variant-numeric: tabular-nums; }
+  .adhkar-hint{ font-size:11px; color:var(--sage); }
 </style>
 </head>
 <body>
@@ -184,6 +204,19 @@
     </div>
     <div class="qa-answer" id="qaAnswer" style="display:none;"></div>
     <div class="qa-chips" id="qaChips"></div>
+  </div>
+
+  <div class="qa-card" id="adhkarCard">
+    <div class="qa-title">أذكار الصباح والمساء</div>
+    <div class="qa-sub">اضغط على أي ذكر لعدّ مرات ترديده</div>
+    <div class="adhkar-tabs">
+      <button class="adhkar-tab active" id="tabMorning" data-tab="morning">أذكار الصباح</button>
+      <button class="adhkar-tab" id="tabEvening" data-tab="evening">أذكار المساء</button>
+    </div>
+    <div id="adhkarList"></div>
+    <div class="footer-actions">
+      <button class="btn" id="adhkarResetBtn">إعادة تعيين العداد</button>
+    </div>
   </div>
 </div>
 
@@ -546,7 +579,89 @@
     if(e.key === 'Enter') askQuestion();
   });
   renderChips();
+
+  const ADHKAR = {
+    morning: [
+      { text: "أَصْبَحْنَا وَأَصْبَحَ الْمُلْكُ لِلَّهِ، وَالْحَمْدُ لِلَّهِ، لَا إِلَهَ إِلَّا اللَّهُ وَحْدَهُ لَا شَرِيكَ لَهُ، لَهُ الْمُلْكُ وَلَهُ الْحَمْدُ وَهُوَ عَلَى كُلِّ شَيْءٍ قَدِيرٌ", target: 1 },
+      { text: "اللَّهُمَّ بِكَ أَصْبَحْنَا، وَبِكَ أَمْسَيْنَا، وَبِكَ نَحْيَا، وَبِكَ نَمُوتُ، وَإِلَيْكَ النُّشُورُ", target: 1 },
+      { text: "آية الكرسي: اللَّهُ لَا إِلَٰهَ إِلَّا هُوَ الْحَيُّ الْقَيُّومُ ۚ لَا تَأْخُذُهُ سِنَةٌ وَلَا نَوْمٌ ۚ لَّهُ مَا فِي السَّمَاوَاتِ وَمَا فِي الْأَرْضِ", target: 1 },
+      { text: "سورة الإخلاص: قُلْ هُوَ اللَّهُ أَحَدٌ ۝ اللَّهُ الصَّمَدُ ۝ لَمْ يَلِدْ وَلَمْ يُولَدْ ۝ وَلَمْ يَكُن لَّهُ كُفُوًا أَحَدٌ", target: 3 },
+      { text: "سورة الفلق: قُلْ أَعُوذُ بِرَبِّ الْفَلَقِ ۝ مِن شَرِّ مَا خَلَقَ", target: 3 },
+      { text: "سورة الناس: قُلْ أَعُوذُ بِرَبِّ النَّاسِ ۝ مَلِكِ النَّاسِ ۝ إِلَٰهِ النَّاسِ", target: 3 },
+      { text: "اللَّهُمَّ عَافِنِي فِي بَدَنِي، اللَّهُمَّ عَافِنِي فِي سَمْعِي، اللَّهُمَّ عَافِنِي فِي بَصَرِي، لَا إِلَٰهَ إِلَّا أَنْتَ", target: 3 },
+      { text: "حَسْبِيَ اللَّهُ لَا إِلَٰهَ إِلَّا هُوَ عَلَيْهِ تَوَكَّلْتُ وَهُوَ رَبُّ الْعَرْشِ الْعَظِيمِ", target: 7 },
+      { text: "سُبْحَانَ اللَّهِ وَبِحَمْدِهِ", target: 100 },
+      { text: "سيد الاستغفار: اللَّهُمَّ أَنْتَ رَبِّي لَا إِلَٰهَ إِلَّا أَنْتَ، خَلَقْتَنِي وَأَنَا عَبْدُكَ، وَأَنَا عَلَى عَهْدِكَ وَوَعْدِكَ مَا اسْتَطَعْتُ", target: 1 }
+    ],
+    evening: [
+      { text: "أَمْسَيْنَا وَأَمْسَى الْمُلْكُ لِلَّهِ، وَالْحَمْدُ لِلَّهِ، لَا إِلَهَ إِلَّا اللَّهُ وَحْدَهُ لَا شَرِيكَ لَهُ، لَهُ الْمُلْكُ وَلَهُ الْحَمْدُ وَهُوَ عَلَى كُلِّ شَيْءٍ قَدِيرٌ", target: 1 },
+      { text: "اللَّهُمَّ بِكَ أَمْسَيْنَا، وَبِكَ أَصْبَحْنَا، وَبِكَ نَحْيَا، وَبِكَ نَمُوتُ، وَإِلَيْكَ الْمَصِيرُ", target: 1 },
+      { text: "آية الكرسي: اللَّهُ لَا إِلَٰهَ إِلَّا هُوَ الْحَيُّ الْقَيُّومُ ۚ لَا تَأْخُذُهُ سِنَةٌ وَلَا نَوْمٌ ۚ لَّهُ مَا فِي السَّمَاوَاتِ وَمَا فِي الْأَرْضِ", target: 1 },
+      { text: "سورة الإخلاص: قُلْ هُوَ اللَّهُ أَحَدٌ ۝ اللَّهُ الصَّمَدُ ۝ لَمْ يَلِدْ وَلَمْ يُولَدْ ۝ وَلَمْ يَكُن لَّهُ كُفُوًا أَحَدٌ", target: 3 },
+      { text: "سورة الفلق: قُلْ أَعُوذُ بِرَبِّ الْفَلَقِ ۝ مِن شَرِّ مَا خَلَقَ", target: 3 },
+      { text: "سورة الناس: قُلْ أَعُوذُ بِرَبِّ النَّاسِ ۝ مَلِكِ النَّاسِ ۝ إِلَٰهِ النَّاسِ", target: 3 },
+      { text: "اللَّهُمَّ عَافِنِي فِي بَدَنِي، اللَّهُمَّ عَافِنِي فِي سَمْعِي، اللَّهُمَّ عَافِنِي فِي بَصَرِي، لَا إِلَٰهَ إِلَّا أَنْتَ", target: 3 },
+      { text: "أَعُوذُ بِكَلِمَاتِ اللَّهِ التَّامَّاتِ مِن شَرِّ مَا خَلَقَ", target: 3 },
+      { text: "سُبْحَانَ اللَّهِ وَبِحَمْدِهِ", target: 100 },
+      { text: "سيد الاستغفار: اللَّهُمَّ أَنْتَ رَبِّي لَا إِلَٰهَ إِلَّا أَنْتَ، خَلَقْتَنِي وَأَنَا عَبْدُكَ، وَأَنَا عَلَى عَهْدِكَ وَوَعْدِكَ مَا اسْتَطَعْتُ", target: 1 }
+    ]
+  };
+
+  let adhkarTab = 'morning';
+  let adhkarCounts = {};
+
+  function resetAdhkarCounts(){
+    adhkarCounts = {};
+    ADHKAR[adhkarTab].forEach((_, i) => { adhkarCounts[i] = 0; });
+  }
+  resetAdhkarCounts();
+
+  function renderAdhkar(){
+    const list = document.getElementById('adhkarList');
+    list.innerHTML = ADHKAR[adhkarTab].map((item, i) => {
+      const current = adhkarCounts[i] || 0;
+      const done = current >= item.target;
+      return `<div class="adhkar-item ${done ? 'done':''}" data-idx="${i}">
+        <div class="adhkar-text">${item.text}</div>
+        <div class="adhkar-progress">
+          <span class="adhkar-hint">${done ? '✓ تم' : 'اضغط للعدّ'}</span>
+          <span class="adhkar-count">${current} / ${item.target}</span>
+        </div>
+      </div>`;
+    }).join('');
+
+    list.querySelectorAll('.adhkar-item').forEach(el => {
+      el.addEventListener('click', () => {
+        const idx = el.dataset.idx;
+        const target = ADHKAR[adhkarTab][idx].target;
+        adhkarCounts[idx] = ((adhkarCounts[idx] || 0) + 1);
+        if(adhkarCounts[idx] > target) adhkarCounts[idx] = 0;
+        renderAdhkar();
+      });
+    });
+  }
+
+  document.getElementById('tabMorning').addEventListener('click', () => {
+    adhkarTab = 'morning';
+    document.getElementById('tabMorning').classList.add('active');
+    document.getElementById('tabEvening').classList.remove('active');
+    resetAdhkarCounts();
+    renderAdhkar();
+  });
+  document.getElementById('tabEvening').addEventListener('click', () => {
+    adhkarTab = 'evening';
+    document.getElementById('tabEvening').classList.add('active');
+    document.getElementById('tabMorning').classList.remove('active');
+    resetAdhkarCounts();
+    renderAdhkar();
+  });
+  document.getElementById('adhkarResetBtn').addEventListener('click', () => {
+    resetAdhkarCounts();
+    renderAdhkar();
+  });
+
+  renderAdhkar();
 })();
 </script>
 </body>
-</html>
+</html> 
